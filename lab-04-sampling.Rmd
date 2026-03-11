@@ -1,4 +1,4 @@
----
+ ---
 title: "Lab 04 — Sampling from Time Series"
 author: "EAES 480 — Modern Statistics in Earth & Environmental Science"
 date: "`r format(Sys.Date(), '%B %d, %Y')`"
@@ -15,14 +15,14 @@ editor_options:
   chunk_output_type: inline
 ---
 
-```{r setup, echo=FALSE, message=FALSE, warning=FALSE}
+```{r setup, echo=TRUE, message=TRUE, warning=TRUE}
 library(tidyverse)
 library(lubridate)
 library(janitor)
 
 knitr::opts_chunk$set(
-  warning = FALSE,
-  message = FALSE
+  warning = TRUE,
+  message = TRUE
 )
 ```
 
@@ -58,7 +58,7 @@ By the end of this lab, you should be able to:
 
 ## Load and inspect
 
-```{r load_data, echo=TRUE, eval=FALSE}
+```{r load_data, echo=TRUE, eval=TRUE}
 df <- read_csv("data/us-ams-simple.csv") %>%
   clean_names() %>% filter(year_local == 2023)
 
@@ -76,14 +76,13 @@ This dataset uses **Year + Day-of-Year (DOY)**. Month must be derived from a cal
 ```{r derive_time, echo=TRUE, eval=FALSE}
 df <- df %>%
   mutate(
-    # TODO: create a Date column from year_local and doy
-    # HINT: Jan 1 is DOY = 1, so use (doy - 1) with origin = "YYYY-01-01"
-    date = as.Date(___ - 1, origin = paste0(___, "-01-01")),
+    # create Date column
+    date = as.Date(doy - 1, origin = paste0(year_local, "-01-01")),
 
-    # TODO: create a month column (numeric 1–12 or labeled months)
-    month = month(___, label = TRUE, abbr = TRUE),
+    # create month column
+    month = month(date, label = TRUE, abbr = TRUE),
 
-    # TODO: make a day/night label using daytime (0/1)
+    # create day/night label
     day_night = if_else(daytime == 1, "Day", "Night")
   )
 
@@ -103,21 +102,22 @@ Examples you can choose from (depending on what you see in the dataset):
 - Meteorology: `ta`, `ts`, `swc`
 
 ```{r choose_response, echo=TRUE, eval=FALSE}
-# TODO: choose ONE response variable (a column name as a string)
-response_var <- "gpp"   # replace "gpp" with your choice, e.g. "fc" or "le" or "ta"
+# choose ONE response variable
+response_var <- "gpp"
 
-# CHECK: print a quick summary
-df %>% summarise(
-  n = n(),
-  n_missing = sum(is.na(____)),
-  mean = mean(____, na.rm = TRUE),
-  sd = sd(____, na.rm = TRUE)
-)
+# summary statistics
+df %>% 
+  summarise(
+    n = n(),
+    n_missing = sum(is.na(.data[[response_var]])),
+    mean = mean(.data[[response_var]], na.rm = TRUE),
+    sd = sd(.data[[response_var]], na.rm = TRUE)
+  )
 ```
 
 **Prompt (2–3 sentences):** Why did you choose this response variable? What do you expect its seasonality/day–night pattern to be?
 
-> *Write your answer here.*
+> I chose gpp because it measures the amount of carbon plants absorb through photosynthesis. I expect strong seasonal variation with higher values during spring and summer and lower values in winter. I also expect a day/night pattern where productivity is higher during the day as photosynthesis occurs and lower at night.
 
 ---
 
@@ -130,11 +130,15 @@ Fill in at least **5 variables** from this dataset:
 
 | Variable | Units | Description | Expected sign/seasonality? |
 |----------|-------|-------------|----------------------------|
-|          |       |             |                            |
-|          |       |             |                            |
-|          |       |             |                            |
-|          |       |             |                            |
-|          |       |             |                            |
+|DBH|cm|diameter of tree measured at breast height|postive correlation|
+
+|LEAF_WET|%|leaf wetness|High in wet months/low in dry months|
+
+|SAP_FLOW|mmolH2Om^-2s^-1|Sap flowin trees|positive in warm months|
+
+|FETCH_70|m|cross-wind footprint distance|dependent on wind patterns|
+
+|CO2|µmolCO2mol^-1|CO2 mole fraction in wet air|high in cold months, low in warm months|
 
 ---
 
@@ -149,7 +153,7 @@ Remember: for this lab, the **population** is the entire 2023 half-hourly time s
 # TODO: pick a y aesthetic using response_var.
 
 df %>%
-  ggplot(aes(x = date, y = ____)) +
+  ggplot(aes(x = date, y = .data[[response_var]])) +
   geom_line(alpha = 0.25) +
   theme_classic(base_size = 18) +
   labs(
@@ -161,7 +165,7 @@ df %>%
 
 **Prompt (2–3 sentences):** What major patterns do you see? (Seasonal cycle? Daily cycle? Outliers?)
 
-> *Write your answer here.*
+> The time series shows how the response variable changes over the course of 2023. I expect to see clear seasonality, with higher values during the spring and summer months and lower values during the winter. Because the data are recorded every 30 minutes, the plot should also show short-term fluctuations throughout each day.
 
 ---
 
@@ -171,12 +175,12 @@ df %>%
 # GOAL: See the overall distribution of the population.
 # TODO: choose an appropriate number of bins (start with ~50).
 
-ggplot(df, aes(x = ____)) +
-  geom_histogram(bins = ___, alpha = 0.7) +
+ggplot(df, aes(x = .data[[response_var]])) + 
+  geom_histogram(bins = 50, alpha = 0.7) +
   theme_classic(base_size = 18) +
   labs(x = response_var, y = "Count", title = "Population distribution (histogram)")
 
-ggplot(df, aes(x = ____)) +
+ggplot(df, aes(x = .data[[response_var]])) +
   geom_density(alpha = 0.7) +
   theme_classic(base_size = 18) +
   labs(x = response_var, y = "Density", title = "Population distribution (density)")
@@ -184,7 +188,7 @@ ggplot(df, aes(x = ____)) +
 
 **Prompt:** Describe shape (skew, modality), center, and spread.
 
-> *Write your answer here.*
+> The GPP distribution is concentrated with values near zero, displaying a sharp peak in that section. There is a long tail extending toward higher positive values showing occasional periods of higher productivity. The pattern likely reflects times where plant photosynthesis is low or even near zero for much of the year; with higher values occurring during the active growing season.  
 
 ---
 
@@ -195,7 +199,7 @@ ggplot(df, aes(x = ____)) +
 ```{r pop_by_month, echo=TRUE, eval=FALSE}
 # TODO: make month appear in a sensible order (it already is an ordered factor if label=TRUE)
 df %>%
-  ggplot(aes(x = month, y = ____)) +
+  ggplot(aes(x = month, y = .data[[response_var]])) +
   geom_boxplot(outlier.alpha = 0.25) +
   theme_classic(base_size = 18) +
   labs(x = NULL, y = response_var, title = "Population by month")
@@ -205,7 +209,7 @@ df %>%
 
 ```{r pop_by_daynight, echo=TRUE, eval=FALSE}
 df %>%
-  ggplot(aes(x = day_night, y = ____)) +
+  ggplot(aes(x = day_night, y = .data[[response_var]])) +
   geom_boxplot(outlier.alpha = 0.25) +
   theme_classic(base_size = 18) +
   labs(x = NULL, y = response_var, title = "Population by day vs night")
@@ -213,7 +217,8 @@ df %>%
 
 **Prompt (3–4 sentences):** Which grouping variable (month or day/night) seems to explain more variability in your response? Why?
 
-> *Write your answer here.*
+> The month grouping explains more variability in GPP compared to the day/night grouping. The monthly boxplots show plant productivity at its highest during summer months which extend from May to September while winter months display lower productivity levels. The day vs night plot shows differences, but the overall range and shift in values across months is much larger. These results demonstrate that daytime and nighttime temperature and sunlight variations better explain GPP changes than daytime and nighttime patterns.
+
 
 ---
 
@@ -222,8 +227,8 @@ df %>%
 Compute the population mean and SD for your chosen response variable.
 
 ```{r population_params, echo=TRUE, eval=FALSE}
-pop_mean <- mean(df____, na.rm = TRUE)
-pop_sd   <- sd(df____, na.rm = TRUE)
+pop_mean <- mean(df[[response_var]], na.rm = TRUE)
+pop_sd   <- sd(df[[response_var]], na.rm = TRUE)
 
 tibble(
   response_var = response_var,
@@ -242,13 +247,13 @@ tibble(
 set.seed(480)
 
 # TODO: choose a sample size (e.g., 200, 500, 1000)
-n_samp <- ___
+n_samp <- 500
 
 samp <- df %>%
   slice_sample(n = n_samp)
 
-samp_mean <- mean(samp____, na.rm = TRUE)
-samp_sd   <- sd(samp____, na.rm = TRUE)
+samp_mean <- mean(samp[[response_var]], na.rm = TRUE)
+samp_sd   <- sd(samp[[response_var]], na.rm = TRUE)
 
 tibble(
   n_samp = n_samp,
@@ -261,7 +266,8 @@ tibble(
 
 **Prompt (2–3 sentences):** How close is your one-sample estimate to the population mean/SD? Is the difference surprising?
 
-> *Write your answer here.*
+> The population mean located at 6.05 and population standard deviation located at 10.36 show a close match to my sample results which were respectively 5.84 and 10.12. The differences are small and expected because the sample was randomly drawn from the entire dataset. The sample statistics show this phenomenon as they always differ from actual population figures when researchers use random sampling methods.
+
 
 ---
 
@@ -270,13 +276,13 @@ tibble(
 ```{r sampling_distribution, echo=TRUE, eval=FALSE}
 set.seed(480)
 
-reps <- ___   # TODO: choose number of replicates (e.g., 500 or 1000)
+reps <- 1000   # TODO: choose number of replicates (e.g., 500 or 1000)
 
 means <- replicate(
   reps,
   df %>%
     slice_sample(n = n_samp) %>%
-    summarise(m = mean(____, na.rm = TRUE)) %>%
+    summarise(m = mean(.data[[response_var]], na.rm = TRUE)) %>%
     pull(m)
 )
 
@@ -294,7 +300,7 @@ ggplot(tibble(mean_est = means), aes(mean_est)) +
 
 **Prompt (2–3 sentences):** Is the sampling distribution centered on the population mean? What happens if you increase `n_samp`?
 
-> *Write your answer here.*
+> The sampling distribution displays its center point at the population mean, the dashed vertical line demonstrates this center through its position near 6. This tells us that sample means generally group together their true population value. The sampling distribution of a distribution becomes more precise with narrower results as larger sample sizes used for estimation of population mean produce better estimation results.
 
 ---
 
@@ -309,15 +315,15 @@ set.seed(480)
 
 # GOAL: sample within each month to ensure seasonal representation.
 # TODO: choose n_per_month so total sample size is reasonable (e.g., 12 * 20 = 240)
-n_per_month <- ___
+n_per_month <- 20
 
 samp_strat <- df %>%
   group_by(month) %>%
   slice_sample(n = n_per_month) %>%
   ungroup()
 
-strat_mean <- mean(samp_strat____, na.rm = TRUE)
-strat_sd   <- sd(samp_strat____, na.rm = TRUE)
+strat_mean <- mean(samp_strat[[response_var]], na.rm = TRUE)
+strat_sd   <- sd(samp_strat[[response_var]], na.rm = TRUE)
 
 tibble(
   n_per_month = n_per_month,
@@ -343,7 +349,8 @@ tibble(
 
 **Prompt (3–4 sentences):** Which strategy better approximated the population mean and SD for your response variable? Why might stratification help (or not) here?
 
-> *Write your answer here.*
+> The simple random sample showed better results for estimating population mean and standard deviation compared to the stratified sample. The SRS mean (5.84) and SD (10.12) are closer to the population mean (6.05) and SD (10.36) than the stratified estimates. The method of monthly stratification allows for better advantages because GPP shows strong seasonal variation; this method ensures equal representation of all months which prevents from seasonal bias from occurring during the sampling process. The stratified estimate for this showed a greater deviation from actual population values because the analysis used a small number of monthly sample observations.
+
 
 ---
 
@@ -356,7 +363,8 @@ Answer in **4–6 sentences**:
 - In EAES field studies, when is stratification essential?
 - What is one trade-off of stratified sampling?
 
-> *Write your answer here.*
+> Seasonal changes impact the collection of samples due to environmental conditions, including GPP values, experience annual variations which result from temperature shifts and changes in sunlight as well as plant growth. The sampling process would create estimation errors because it would show excess representation of specific time periods when researchers do not account for hidden seasonal and monthly patterns. EAES field studies require stratification because their populations display specifif seasonal and day-night patterns that need proper sampling in order to represent all important groups. This method produces estimates which more accurately match actual population distribution patterns. The process of stratified sampling requires researchers to set apart more time for data collection as they need to understand how their study environment operates.
+
 
 ---
 
@@ -390,7 +398,7 @@ All exercises below should run using the same objects from Part I:
 ```{r systematic_sampling, echo=TRUE, eval=FALSE}
 # GOAL: Create a systematic sample and compare mean/sd to population.
 # TODO: choose an interval k (try 48, 24, 96).
-k <- ___
+k <- 48
 
 sys_samp <- df %>%
   # TODO: keep only non-missing response values
@@ -411,7 +419,8 @@ tibble(
 **Prompt (3–4 sentences):** Did systematic sampling approximate the population mean/SD better or worse than SRS?  
 What cycle (daily or seasonal) might be interacting with your chosen `k`?
 
-> *Write your answer here.*
+> The simple random sample produced better results for estimating population mean and standard deviation than systematic sampling did. The systematic sample produced a mean of around -0.76 which is far from the population mean of 6.05 and a much smaller standard deviation. The sampling interval k=48 picks observations at identical times throughout each day which created this result. The daily cycle of GPP which depends on daylight and photosynthesis causes sampling at fixed times to produce biased results.
+
 
 ---
 
@@ -426,7 +435,7 @@ This mimics EAES logistics: you may only be able to sample on certain days.
 # TODO: choose number of days to sample.
 set.seed(480)
 
-n_days <- ___
+n_days <- 10
 
 days <- df %>%
   distinct(date) %>%
@@ -453,7 +462,7 @@ tibble(
 **Prompt (3–4 sentences):** Why might cluster sampling have **higher variance** than SRS for the same number of measurements?  
 What feature of time series data (hint: autocorrelation) is relevant here?
 
-> *Write your answer here.*
+> Cluster sampling can have higher variance than simple random sampling because observations within the same cluster are usually similar to each other. The time series data shows a pattern where measurements taken at close intervals tend to establish similar measurement results. The sample contains less independent information because multiple points from the same day show identical conditions. The dataset shows less variability because cluster sampling captures data from specific time periods.
 
 ---
 
@@ -466,7 +475,7 @@ This mimics continuous instrumentation that logs at a lower frequency (e.g., hou
 ```{r quasi_continuous, echo=TRUE, eval=FALSE}
 # GOAL: Create a regular subsampled time series.
 # TODO: choose a step size (every 2 records = hourly; every 4 = 2-hourly).
-step <- ___
+step <- 2
 
 qc_samp <- df %>%
   filter(!is.na(.data[[response_var]])) %>%
@@ -490,14 +499,14 @@ tibble(
 # HINT: filter to one month to avoid overplotting.
 
 df %>%
-  filter(month == ___) %>%   # e.g., "Jul" if month is labeled
+  filter(month == "Jul") %>%   # e.g., "Jul" if month is labeled
   ggplot(aes(x = date, y = .data[[response_var]])) +
   geom_line(alpha = 0.25) +
   theme_classic(base_size = 18) +
   labs(title = "Population time series (subset)", x = NULL, y = response_var)
 
 qc_samp %>%
-  filter(month == ___) %>%
+  filter(month == "Jul") %>%
   ggplot(aes(x = date, y = .data[[response_var]])) +
   geom_line(alpha = 0.6) +
   theme_classic(base_size = 18) +
@@ -507,7 +516,7 @@ qc_samp %>%
 **Prompt (3–4 sentences):** Does quasi-continuous sampling preserve the **seasonal** pattern? The **daily** pattern?  
 In an EAES context, when is quasi-continuous sampling preferable to sparse discrete sampling?
 
-> *Write your answer here.*
+> The sampling method used for quasi-continuous sampling maintains both seasonal patterns and daily patterns which exist in the dataset. The subsampled time series still shows the repeating daily cycle of GPP as well as broader seasonal variation over time. The time series data maintains its complete structure because researchers collected measurements at consistent time points resulting in fewer data points. Researchers in EAES studies prefer to use quasi-continuous sampling when the research requires them to monitor ecosystem fluxes and climate variables throughout different time intervals because they need accurate timing and measurement sequence data.
 
 ---
 
@@ -545,7 +554,7 @@ bind_rows(
 Explain *why* in terms of (i) seasonal/diurnal structure and (ii) dependence/autocorrelation.  
 If you were designing a real EAES study with limited field days, what hybrid strategy would you propose (e.g., stratified + clustered)?
 
-> *Write your answer here.*
+> The quasi-continuous sampling produced the best estimate of the population mean with a value (6.0469) that is almost identical to the population mean (6.0459). It also provided a close estimate of the population standard deviation. However, several methods such as SRS and cluster sampling were also reasonably close. Quasi-continuous sampling works well because it preserves the structure of the data. In contrast, systematic sampling performed poorly because the fixed interval aligned with the daily cycle, which caused bias. Time series data also exhibit autocorrelation, meaning observations close in time are similar, which affects strategies like cluster sampling where many measurements come from the same day. In a real EAES study with limited field days, a good approach would be a strategy combining stratified and cluster sampling, where researchers sample a set of days across different months to ensure seasonal representation and practical field logistics.
 
 ---
 
