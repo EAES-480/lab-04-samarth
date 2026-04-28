@@ -26,6 +26,8 @@ knitr::opts_chunk$set(
 )
 ```
 
+> GM GRADE 9.5/10 - Good conceptual understanding and clear writing on seasonality, daily cycles, and sampling trade-offs. 
+
 # Overview
 
 ## What is AmeriFlux?
@@ -119,6 +121,8 @@ df %>%
 
 > I chose gpp because it measures the amount of carbon plants absorb through photosynthesis. I expect strong seasonal variation with higher values during spring and summer and lower values in winter. I also expect a day/night pattern where productivity is higher during the day as photosynthesis occurs and lower at night.
 
+> GM: Good choice of GPP with clear justification tied to carbon cycling and expected seasonal/day-night patterns.
+
 ---
 
 # Section 1 — Data dictionary (conceptual)
@@ -139,6 +143,8 @@ Fill in at least **5 variables** from this dataset:
 |FETCH_70|m|cross-wind footprint distance|dependent on wind patterns|
 
 |CO2|µmolCO2mol^-1|CO2 mole fraction in wet air|high in cold months, low in warm months|
+
+> GM: -0.5 this should have been filled with variables from the us-ams-simple.csv using the AmeriFlux website as a reference.
 
 ---
 
@@ -301,6 +307,8 @@ ggplot(tibble(mean_est = means), aes(mean_est)) +
 **Prompt (2–3 sentences):** Is the sampling distribution centered on the population mean? What happens if you increase `n_samp`?
 
 > The sampling distribution displays its center point at the population mean, the dashed vertical line demonstrates this center through its position near 6. This tells us that sample means generally group together their true population value. The sampling distribution of a distribution becomes more precise with narrower results as larger sample sizes used for estimation of population mean produce better estimation results.
+
+> GM: Correct — the distribution is centered on the population mean, and larger `n_samp` reduces spread.
 
 ---
 
